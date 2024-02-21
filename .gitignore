@@ -1,0 +1,9 @@
+# directories
+*/__pycache__/*
+*/migrations/*
+
+# database
+db.sqlite3
+
+# environment
+.venv
