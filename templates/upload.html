@@ -18,7 +18,12 @@
             <label class="form-label" for="file">Choose a zip or rar file</label>
             <input class="form-control" type="file" id="file" name="files" accept=".zip,.rar" multiple required>
         </div>
-        <div id="file-names"></div>
+        <label class="form-label">Choose a search option</label>
+        <select class="form-select form-select-sm mb-3" aria-label=".form-select-lg example" name="search_mode" required>
+            <option value="" disabled selected>Select your option</option>
+            <option value="text">Search with text</option>
+            <option value="image">Search with image</option>
+        </select>
         <button type="submit">Upload</button>
     </form>
 </div>

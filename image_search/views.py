@@ -5,6 +5,12 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from zipfile import ZipFile
 import os
+from dashboard.settings import BASE_DIR
+from .chromadb_operations import ChromadbOperations
+
+
+# creating a ChromadbOperations object to insert data
+vector_operations = ChromadbOperations()
 
 # Create your views here.
 
@@ -93,18 +99,17 @@ def file_upload(request):
 
 @login_required(login_url='login')
 def similarity_search(request):
+    print(request.POST['search_mode'])
     if len(request.FILES.getlist('files')) == 0:
         # if user did not uploaded any file then redirect to the same page
         return redirect('file_upload')
     else:
         uploaded_file = request.FILES.getlist('files')[0]
-        print(uploaded_file.name)
         try:
             with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
                 for chunk in uploaded_file.chunks():
                     destination_file.write(chunk)
             destination_file.close()
-            print("Zip file saved successfully")
 
             # extracting contents from the zip file
             with ZipFile(f'uploads/{uploaded_file.name}', 'r') as zip_ref:
@@ -112,6 +117,9 @@ def similarity_search(request):
                 zip_ref.extractall('uploads/images')
 
             os.remove(f"uploads/{uploaded_file.name}")
+            print("[INFO] Data extraction complete")
+
+            vector_operations.insert_data(BASE_DIR / "uploads/images/")
         except Exception as e:
             print(e)
 

@@ -23,6 +23,22 @@ def main():
                 # if it is a directory
                 if os.path.isdir(BASE_DIR / f'uploads/{item}'):
                     shutil.rmtree(path=BASE_DIR / f'uploads/{item}')
+
+    # for vector database folder
+    if 'database' not in os.listdir(path=BASE_DIR):
+        os.mkdir(path=BASE_DIR / 'database')
+    else:
+        # cleaning the previous vector data
+        if len(os.listdir(path=BASE_DIR / 'database')) != 0:
+            files = os.listdir(path=BASE_DIR / 'database')
+            for item in files:
+                # if it is a file
+                if os.path.isfile(path=BASE_DIR / f"database/{item}"):
+                    os.remove(path=BASE_DIR / f"database/{item}")
+                
+                # if it is a directory
+                if os.path.isdir(BASE_DIR / f"database/{item}"):
+                    shutil.rmtree(path=BASE_DIR / f"database/{item}")
     
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dashboard.settings')
