@@ -3,6 +3,8 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, login as loginUser, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from zipfile import ZipFile
+import os
 
 # Create your views here.
 
@@ -83,6 +85,37 @@ def logout_function(request):
 def index(request):
     return render(request=request, template_name='home.html')
 
+
+@login_required(login_url='login')
+def file_upload(request):
+    return render(request=request, template_name='upload.html')
+
+
+@login_required(login_url='login')
+def similarity_search(request):
+    if len(request.FILES.getlist('files')) == 0:
+        # if user did not uploaded any file then redirect to the same page
+        return redirect('file_upload')
+    else:
+        uploaded_file = request.FILES.getlist('files')[0]
+        print(uploaded_file.name)
+        try:
+            with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
+                for chunk in uploaded_file.chunks():
+                    destination_file.write(chunk)
+            destination_file.close()
+            print("Zip file saved successfully")
+
+            # extracting contents from the zip file
+            with ZipFile(f'uploads/{uploaded_file.name}', 'r') as zip_ref:
+                os.makedirs('uploads/images', exist_ok=True)
+                zip_ref.extractall('uploads/images')
+
+            os.remove(f"uploads/{uploaded_file.name}")
+        except Exception as e:
+            print(e)
+
+        return redirect('file_upload')
 
 def check_user_credentials(user_info):
     username = user_info['username']

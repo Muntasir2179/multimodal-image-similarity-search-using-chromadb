@@ -3,8 +3,27 @@
 import os
 import sys
 
+from dashboard.settings import BASE_DIR
+import shutil
+
 
 def main():
+    # creating uploads folder if it doesn't exists
+    if 'uploads' not in os.listdir(path=BASE_DIR):
+        os.mkdir(path=BASE_DIR / 'uploads')
+    else:
+        # clearing previous data in uploads folder
+        if len(os.listdir(path=BASE_DIR / 'uploads')) != 0:
+            files = os.listdir(path=BASE_DIR / 'uploads')
+            for item in files:
+                # if it is a file
+                if os.path.isfile(BASE_DIR / f'uploads/{item}'):
+                    os.remove(path=BASE_DIR / f'uploads/{item}')
+                
+                # if it is a directory
+                if os.path.isdir(BASE_DIR / f'uploads/{item}'):
+                    shutil.rmtree(path=BASE_DIR / f'uploads/{item}')
+    
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dashboard.settings')
     try:

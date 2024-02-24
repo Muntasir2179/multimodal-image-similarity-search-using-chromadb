@@ -1,6 +1,7 @@
 # directories
 */__pycache__/*
 */migrations/*
+uploads/*
 
 # database
 db.sqlite3
