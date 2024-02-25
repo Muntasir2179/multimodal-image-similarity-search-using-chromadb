@@ -9,6 +9,10 @@ import shutil
 from dashboard.settings import BASE_DIR
 from .chromadb_operations import ChromadbOperations
 
+from PIL import Image
+from io import BytesIO
+import base64
+
 
 # creating a ChromadbOperations object to insert data
 vector_operations = ChromadbOperations()
@@ -121,55 +125,57 @@ def file_upload(request):
     if request.method == 'GET':
         return render(request=request, template_name='upload.html')
     else:
-        if len(request.FILES.getlist('files')) == 0:
-            # if user did not uploaded any file then redirect to the same page
-            return redirect('file_upload')
-        else:
-            uploaded_file = request.FILES.getlist('files')[0]
-            try:
-                with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
-                    for chunk in uploaded_file.chunks():
-                        destination_file.write(chunk)
-                destination_file.close()
+        uploaded_file = request.FILES.getlist('files')[0]
+        with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
+            for chunk in uploaded_file.chunks():
+                destination_file.write(chunk)
+        destination_file.close()
 
-                # extracting contents from the zip file
-                with ZipFile(f'uploads/{uploaded_file.name}', 'r') as zip_ref:
-                    os.makedirs('uploads/images', exist_ok=True)
-                    zip_ref.extractall('uploads/images')
+        # extracting contents from the zip file
+        with ZipFile(f'uploads/{uploaded_file.name}', 'r') as zip_ref:
+            os.makedirs('uploads/images', exist_ok=True)
+            zip_ref.extractall('uploads/images')
 
-                os.remove(f"uploads/{uploaded_file.name}")
-                print("[INFO] Data extraction complete")
+        os.remove(f"uploads/{uploaded_file.name}")
+        print("[INFO] Data extraction complete")
 
-                vector_operations.insert_data(BASE_DIR / "uploads/images/")
+        vector_operations.insert_data(BASE_DIR / "uploads/images/")
                 
-                # switching to search mode based of user choice
-                print(request.POST['search_mode'])
-                if request.POST['search_mode'] == 'text':
-                    return render(request=request, template_name='query_with_text.html')
-                elif request.POST['search_mode'] == 'image':
-                    return render(request=request, template_name='query_with_image.html')
-                else:
-                    return redirect('file_upload')
-            except Exception as e:
-                print(e)
-                return redirect('file_upload')
+        # switching to search mode based of user choice
+        if request.POST['search_mode'] == 'text':
+            return render(request=request, template_name='query_with_text.html')
+        elif request.POST['search_mode'] == 'image':
+            return render(request=request, template_name='query_with_image.html')
+        else:
+            return redirect('file_upload')
 
 
 @login_required(login_url='login')
 def similarity_search_text(request):
     if request.method == "POST":
+        # running query
         query_text = request.POST['query']
-        print(query_text)
-        return redirect('similarity_search_text')
-    else:
-        return render(request=request, template_name='query_with_text.html')
+        query_response = vector_operations.query_with_text(query_text=query_text)
+        
+        # dict to return
+        image_paths = []
+
+        # creating a folder for storing query results images
+        os.makedirs(name=str(BASE_DIR) + "/static/query_results", exist_ok=True)
+        for i in range(len(query_response)):
+            # copying the images
+            shutil.copy(src=str(BASE_DIR) + '/' + query_response[i], dst=str(BASE_DIR) + "/static/query_results/")
+            image_paths.append('/query_results/' + query_response[i].split('/')[2])
+        print(image_paths)
+        return render(request=request, template_name='query_with_text.html', context={'query_response': image_paths})
+
+    return render(request=request, template_name='query_with_text.html', )
 
 
 @login_required(login_url='login')
 def similarity_search_image(request):
     if request.method == "POST":
         query_text = request.POST['query']
-        print(query_text)
         return redirect('similarity_search_image')
     else:
         return render(request=request, template_name='query_with_image.html')
