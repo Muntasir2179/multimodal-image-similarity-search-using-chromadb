@@ -1,4 +1,3 @@
-import open_clip
 import chromadb
 from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
 from chromadb.utils.data_loaders import ImageLoader
@@ -16,3 +15,9 @@ class ChromadbOperations:
         image_names = [(str(image_path) + '/' + single_path) for single_path in os.listdir(image_path)]
         image_ids = [str(i) for i in range(1, len(image_names)+1)]
         self.collection.add(ids=image_ids, uris=image_names)
+
+    def query_with_text(self, query_text):
+        pass
+
+    def query_with_image(self, query_image):
+        pass

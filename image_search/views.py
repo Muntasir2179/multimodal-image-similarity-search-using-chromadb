@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from zipfile import ZipFile
 import os
+import shutil
 from dashboard.settings import BASE_DIR
 from .chromadb_operations import ChromadbOperations
 
@@ -83,6 +84,29 @@ def signup_function(request):
 
 
 def logout_function(request):
+    # clearing previous data in uploads folder
+    if len(os.listdir(path=BASE_DIR / 'uploads')) != 0:
+        files = os.listdir(path=BASE_DIR / 'uploads')
+        for item in files:
+            # if it is a file
+            if os.path.isfile(BASE_DIR / f'uploads/{item}'):
+                os.remove(path=BASE_DIR / f'uploads/{item}')
+            
+            # if it is a directory
+            if os.path.isdir(BASE_DIR / f'uploads/{item}'):
+                shutil.rmtree(path=BASE_DIR / f'uploads/{item}')
+
+    # cleaning the previous vector data
+    if len(os.listdir(path=BASE_DIR / 'database')) != 0:
+        files = os.listdir(path=BASE_DIR / 'database')
+        for item in files:
+            # if it is a file
+            if os.path.isfile(path=BASE_DIR / f"database/{item}"):
+                os.remove(path=BASE_DIR / f"database/{item}")
+            
+            # if it is a directory
+            if os.path.isdir(BASE_DIR / f"database/{item}"):
+                shutil.rmtree(path=BASE_DIR / f"database/{item}")
     logout(request=request)
     return redirect('login')
 
@@ -94,36 +118,62 @@ def index(request):
 
 @login_required(login_url='login')
 def file_upload(request):
-    return render(request=request, template_name='upload.html')
+    if request.method == 'GET':
+        return render(request=request, template_name='upload.html')
+    else:
+        if len(request.FILES.getlist('files')) == 0:
+            # if user did not uploaded any file then redirect to the same page
+            return redirect('file_upload')
+        else:
+            uploaded_file = request.FILES.getlist('files')[0]
+            try:
+                with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
+                    for chunk in uploaded_file.chunks():
+                        destination_file.write(chunk)
+                destination_file.close()
+
+                # extracting contents from the zip file
+                with ZipFile(f'uploads/{uploaded_file.name}', 'r') as zip_ref:
+                    os.makedirs('uploads/images', exist_ok=True)
+                    zip_ref.extractall('uploads/images')
+
+                os.remove(f"uploads/{uploaded_file.name}")
+                print("[INFO] Data extraction complete")
+
+                vector_operations.insert_data(BASE_DIR / "uploads/images/")
+                
+                # switching to search mode based of user choice
+                print(request.POST['search_mode'])
+                if request.POST['search_mode'] == 'text':
+                    return render(request=request, template_name='query_with_text.html')
+                elif request.POST['search_mode'] == 'image':
+                    return render(request=request, template_name='query_with_image.html')
+                else:
+                    return redirect('file_upload')
+            except Exception as e:
+                print(e)
+                return redirect('file_upload')
 
 
 @login_required(login_url='login')
-def similarity_search(request):
-    print(request.POST['search_mode'])
-    if len(request.FILES.getlist('files')) == 0:
-        # if user did not uploaded any file then redirect to the same page
-        return redirect('file_upload')
+def similarity_search_text(request):
+    if request.method == "POST":
+        query_text = request.POST['query']
+        print(query_text)
+        return redirect('similarity_search_text')
     else:
-        uploaded_file = request.FILES.getlist('files')[0]
-        try:
-            with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
-                for chunk in uploaded_file.chunks():
-                    destination_file.write(chunk)
-            destination_file.close()
+        return render(request=request, template_name='query_with_text.html')
 
-            # extracting contents from the zip file
-            with ZipFile(f'uploads/{uploaded_file.name}', 'r') as zip_ref:
-                os.makedirs('uploads/images', exist_ok=True)
-                zip_ref.extractall('uploads/images')
 
-            os.remove(f"uploads/{uploaded_file.name}")
-            print("[INFO] Data extraction complete")
+@login_required(login_url='login')
+def similarity_search_image(request):
+    if request.method == "POST":
+        query_text = request.POST['query']
+        print(query_text)
+        return redirect('similarity_search_image')
+    else:
+        return render(request=request, template_name='query_with_image.html')
 
-            vector_operations.insert_data(BASE_DIR / "uploads/images/")
-        except Exception as e:
-            print(e)
-
-        return redirect('file_upload')
 
 def check_user_credentials(user_info):
     username = user_info['username']
