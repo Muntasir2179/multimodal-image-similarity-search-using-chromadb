@@ -28,12 +28,10 @@
         {% for image_path in query_response %}
         <div class="row mx-auto justify-content-center">
             <div class="card mx-2 p-0 mb-4 shadow">
-                <img src="{% static image_path as varname %}" class="card-img-top" alt="Broken Image">
+                <img src="{% static '/query_results/' %}{{image_path}}" class="card-img-top" alt="{{image_path}}">
             </div>
         </div>
         {% endfor %}
     </div>
-
-    <img src="{% static "/query_results/cat_image1.jpg" %}">
 </div>
 {% endblock content %}

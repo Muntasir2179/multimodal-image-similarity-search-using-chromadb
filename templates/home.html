@@ -20,16 +20,14 @@
         </p>
     </div>
     <div class="options-container dropdown">
-        <a class="option dropdown-toggle" href="" id="datasetDropdownMenu" data-bs-toggle="dropdown"
-            aria-expanded="false">
+        <a class="option dropdown-toggle" href="" id="datasetDropdownMenu" data-bs-toggle="dropdown" aria-expanded="false">
             <div>
                 <h3>Search in NOCAPS</h3>
                 <hr>
                 <p>The query result images will <br> be fetched from specified dataset.</p>
             </div>
         </a>
-        <a class="option dropdown-toggle" href="" id="datasetDropdownMenu" data-bs-toggle="dropdown"
-            aria-expanded="false">
+        <a class="option dropdown-toggle" href="" id="datasetDropdownMenu" data-bs-toggle="dropdown" aria-expanded="false">
             <div>
                 <h3>Search in COCO</h3>
                 <hr>
@@ -41,6 +39,19 @@
             <li><a class="dropdown-item" href="">Search With Image</a></li>
         </ul>
 
+        {% if uploaded %}
+        <a class="option dropdown-toggle" href="" id="customDatasetDropdownMenu" data-bs-toggle="dropdown" aria-expanded="false">
+            <div>
+                <h3>Search in your data</h3>
+                <hr>
+                <p>Your images are stored in database <br> you can run query on your own images.</p>
+            </div>
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="customDatasetDropdownMenu">
+            <li><a class="dropdown-item" href="{% url "similarity_search_text" %}">Search With Text</a></li>
+            <li><a class="dropdown-item" href="{% url "similarity_search_image" %}">Search With Image</a></li>
+        </ul>
+        {% else %}
         <a class="option" href="file-upload/">
             <div>
                 <h3>Upload Your Own Dataset</h3>
@@ -48,6 +59,7 @@
                 <p>Your images will be stored and <br> you will be able to run query on your own images.</p>
             </div>
         </a>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}

@@ -3,6 +3,7 @@
 */migrations/*
 uploads/*
 database
+*/query_results/*
 
 # database
 db.sqlite3

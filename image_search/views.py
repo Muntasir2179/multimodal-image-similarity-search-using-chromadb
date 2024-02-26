@@ -9,10 +9,6 @@ import shutil
 from dashboard.settings import BASE_DIR
 from .chromadb_operations import ChromadbOperations
 
-from PIL import Image
-from io import BytesIO
-import base64
-
 
 # creating a ChromadbOperations object to insert data
 vector_operations = ChromadbOperations()
@@ -99,31 +95,31 @@ def logout_function(request):
             # if it is a directory
             if os.path.isdir(BASE_DIR / f'uploads/{item}'):
                 shutil.rmtree(path=BASE_DIR / f'uploads/{item}')
+    
+    # cleaning the query results folder
+    if len(os.listdir(path=BASE_DIR / f"static/query_results")) != 0:
+        image_names = os.listdir(path=BASE_DIR / f"static/query_results")
+        for img in image_names:
+            os.remove(path=BASE_DIR / f"static/query_results/{img}")
 
     # cleaning the previous vector data
-    if len(os.listdir(path=BASE_DIR / 'database')) != 0:
-        files = os.listdir(path=BASE_DIR / 'database')
-        for item in files:
-            # if it is a file
-            if os.path.isfile(path=BASE_DIR / f"database/{item}"):
-                os.remove(path=BASE_DIR / f"database/{item}")
-            
-            # if it is a directory
-            if os.path.isdir(BASE_DIR / f"database/{item}"):
-                shutil.rmtree(path=BASE_DIR / f"database/{item}")
+    vector_operations.delete_vector_storage()
+
     logout(request=request)
     return redirect('login')
 
 
 @login_required(login_url='login')
 def index(request):
-    return render(request=request, template_name='home.html')
+    if len(os.listdir(path=BASE_DIR / 'uploads')) != 0:
+        return render(request=request, template_name='home.html', context={'current_user': request.user, 'uploaded': True})
+    return render(request=request, template_name='home.html', context={'current_user': request.user, 'uploaded': False})
 
 
 @login_required(login_url='login')
 def file_upload(request):
     if request.method == 'GET':
-        return render(request=request, template_name='upload.html')
+        return render(request=request, template_name='upload.html', context={'current_user': request.user})
     else:
         uploaded_file = request.FILES.getlist('files')[0]
         with open(f"uploads/{uploaded_file.name}", 'wb') as destination_file:
@@ -139,13 +135,14 @@ def file_upload(request):
         os.remove(f"uploads/{uploaded_file.name}")
         print("[INFO] Data extraction complete")
 
+        vector_operations.create_vector_storage()
         vector_operations.insert_data(BASE_DIR / "uploads/images/")
                 
         # switching to search mode based of user choice
         if request.POST['search_mode'] == 'text':
-            return render(request=request, template_name='query_with_text.html')
+            return render(request=request, template_name='query_with_text.html', context={'current_user': request.user})
         elif request.POST['search_mode'] == 'image':
-            return render(request=request, template_name='query_with_image.html')
+            return render(request=request, template_name='query_with_image.html', context={'current_user': request.user})
         else:
             return redirect('file_upload')
 
@@ -165,11 +162,11 @@ def similarity_search_text(request):
         for i in range(len(query_response)):
             # copying the images
             shutil.copy(src=str(BASE_DIR) + '/' + query_response[i], dst=str(BASE_DIR) + "/static/query_results/")
-            image_paths.append('/query_results/' + query_response[i].split('/')[2])
-        print(image_paths)
-        return render(request=request, template_name='query_with_text.html', context={'query_response': image_paths})
+            image_paths.append(query_response[i].split('/')[2])
 
-    return render(request=request, template_name='query_with_text.html', )
+        return render(request=request, template_name='query_with_text.html', context={'query_response': image_paths, 'current_user': request.user})
+
+    return render(request=request, template_name='query_with_text.html', context={'current_user': request.user})
 
 
 @login_required(login_url='login')
@@ -178,7 +175,7 @@ def similarity_search_image(request):
         query_text = request.POST['query']
         return redirect('similarity_search_image')
     else:
-        return render(request=request, template_name='query_with_image.html')
+        return render(request=request, template_name='query_with_image.html', context={'current_user': request.user})
 
 
 def check_user_credentials(user_info):

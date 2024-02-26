@@ -22,3 +22,9 @@ class ChromadbOperations:
 
     def query_with_image(self, query_image):
         pass
+    
+    def create_vector_storage(self):
+        self.__init__()
+
+    def delete_vector_storage(self):
+        self.client.delete_collection(name='multimodal_collection')
