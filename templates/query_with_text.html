@@ -21,17 +21,18 @@
         <input class="button" type="submit" value="Submit Query">
     </form>
 
+    
     <div class="response-container">
         <div class="query-result" id="query-result">
             <h2>Response to the Query</h2>
         </div>
-        {% for image_path in query_response %}
         <div class="row mx-auto justify-content-center">
+            {% for image_path in query_response %}
             <div class="card mx-2 p-0 mb-4 shadow">
                 <img src="{% static '/query_results/' %}{{image_path}}" class="card-img-top" alt="{{image_path}}">
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endblock content %}

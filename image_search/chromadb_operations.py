@@ -3,6 +3,8 @@ from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
 from chromadb.utils.data_loaders import ImageLoader
 from dashboard.settings import BASE_DIR
 import os
+from PIL import Image
+import numpy as np
 
 class ChromadbOperations:
     def __init__(self):
@@ -20,9 +22,14 @@ class ChromadbOperations:
         query_result = self.collection.query(query_texts=[query_text], include=['data'], n_results=3)
         return query_result['uris'][0]
 
-    def query_with_image(self, query_image):
-        pass
+    def query_with_image(self, query_image_path: str):
+        query_image = np.array(Image.open(query_image_path))
+        query_results = self.collection.query(query_images=[query_image], include=['uris'], n_results=3)
+        return query_results['uris'][0]
     
+    def number_of_vectors(self):
+        return self.collection.count()
+
     def create_vector_storage(self):
         self.__init__()
 

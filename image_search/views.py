@@ -82,7 +82,7 @@ def signup_function(request):
         else:
             return render(request=request, template_name='signup.html', context=context)
 
-
+@login_required(login_url='login')
 def logout_function(request):
     # clearing previous data in uploads folder
     if len(os.listdir(path=BASE_DIR / 'uploads')) != 0:
@@ -136,7 +136,8 @@ def file_upload(request):
         print("[INFO] Data extraction complete")
 
         vector_operations.create_vector_storage()
-        vector_operations.insert_data(BASE_DIR / "uploads/images/")
+        if vector_operations.number_of_vectors() == 0:  # if there is no vector inserted before
+            vector_operations.insert_data(BASE_DIR / "uploads/images/")
                 
         # switching to search mode based of user choice
         if request.POST['search_mode'] == 'text':
@@ -172,8 +173,30 @@ def similarity_search_text(request):
 @login_required(login_url='login')
 def similarity_search_image(request):
     if request.method == "POST":
-        query_text = request.POST['query']
-        return redirect('similarity_search_image')
+        # fetching the query image data
+        query_image = request.FILES.getlist('image')[0]
+
+        # saving the image into upload folder
+        os.makedirs(name=str(BASE_DIR) + "/uploads/query_images", exist_ok=True)  # creating a directory for storing the query images
+        query_image_dest = str(BASE_DIR) + f"/uploads/query_images/{query_image.name}"  # path to save the query image
+        with open(query_image_dest, 'wb') as destination:
+            for chunk in query_image.chunks():
+                destination.write(chunk)
+        destination.close()  # query image file saved successfully
+
+        query_response = vector_operations.query_with_image(query_image_path=query_image_dest)
+
+        # dict to return
+        image_paths = []
+
+        # creating a folder for storing query results images
+        os.makedirs(name=str(BASE_DIR) + "/static/query_results", exist_ok=True)
+        for i in range(len(query_response)):
+            # copying the images
+            shutil.copy(src=str(BASE_DIR) + '/' + query_response[i], dst=str(BASE_DIR) + "/static/query_results/")
+            image_paths.append(query_response[i].split('/')[2])  # appending the image names
+        
+        return render(request=request, template_name='query_with_image.html', context={'query_response': image_paths, 'current_user': request.user})
     else:
         return render(request=request, template_name='query_with_image.html', context={'current_user': request.user})
 
