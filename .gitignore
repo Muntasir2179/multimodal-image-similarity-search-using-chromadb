@@ -2,7 +2,6 @@
 */__pycache__/*
 */migrations/*
 uploads/*
-database
 */query_results/*
 
 # database
